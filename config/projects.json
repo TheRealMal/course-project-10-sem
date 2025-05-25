@@ -1,0 +1,9 @@
+[
+    {
+        "gitlab_url":       "test/project",
+        "gitlab_branch":    "main",
+        "public_url":       "",
+        "dast_params":      "",
+        "team":             "dso-team: @mrs20u617"  
+    }
+]

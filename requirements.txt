@@ -1,0 +1,6 @@
+aiohttp
+asyncpg
+psycopg2-binary
+python-dotenv
+gitpython
+rocketchat-API

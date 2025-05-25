@@ -1,0 +1,75 @@
+workflow:
+  rules:
+    - if: $CI_COMMIT_BRANCH != "main" && $CI_PIPELINE_SOURCE != "merge_request_event"
+      when: never
+    - when: always
+
+variables:
+  REGISTRY_PATH: "docker/continuous-monitoring"
+  DOCKER_REGISTRY: ""
+  REGISTRY_IMAGE: "${DOCKER_REGISTRY}/${REGISTRY_PATH}"
+  IMAGE_VERSION: "latest"
+
+  REBUILD: "false"
+  DB_DROP: "false"
+  DB_INIT: "false"
+  
+stages:
+  - build
+  - prepare
+  - run
+
+build_image:
+  stage: build
+  tags:
+    - dso-build
+  rules:
+    - if: $REBUILD == "true"
+  before_script:
+    - docker login -u $USER -p $PASSWORD $DOCKER_REGISTRY
+  script:
+    - docker build --no-cache -t $REGISTRY_IMAGE:$IMAGE_VERSION .
+
+push_image:
+  stage: build
+  needs:
+    - build_image
+  tags:
+    - dso-build
+  rules:
+    - if: $REBUILD == "true"
+  before_script:
+    - docker login -u $USER -p $PASSWORD $DOCKER_REGISTRY
+  script:
+    - docker push $REGISTRY_IMAGE:$IMAGE_VERSION
+
+db_drop:
+  image: 
+    name: "${DOCKER_REGISTRY}/${REGISTRY_PATH}:${IMAGE_VERSION}"
+  stage: prepare
+  tags:
+    - dso-monitoring-1
+  rules:
+    - if: $DB_DROP == "true"
+  script:
+    - /scripts/db-drop.py
+
+db_init:
+  image: 
+    name: "${DOCKER_REGISTRY}/${REGISTRY_PATH}:${IMAGE_VERSION}"
+  stage: prepare
+  tags:
+    - dso-monitoring-1
+  rules:
+    - if: $DB_INIT == "true"
+  script:
+    - /scripts/db-initialization.py
+
+run_monitoring:
+  image: 
+    name: "${DOCKER_REGISTRY}/${REGISTRY_PATH}:${IMAGE_VERSION}"
+  stage: run
+  tags:
+    - dso-monitoring-1
+  script:
+    - /src/main.py
